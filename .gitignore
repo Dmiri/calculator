@@ -1,0 +1,5 @@
+# ignore "/.vs"
+.vs/
+.Calculation/Debug/
+.Calculation/Calculation.vcxproj
+.Calculation/Calculation.vcxproj.filters
