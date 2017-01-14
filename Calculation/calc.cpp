@@ -4,7 +4,7 @@
 #include <Windows.h>
 
 using namespace std;
-
+ 
 //-------------------------------------------------------
 
 bool   is_declared(string var);
