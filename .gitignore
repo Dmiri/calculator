@@ -1,4 +1,5 @@
 # ignore "/.vs"
+*~
 .vs/
 .Calculation/Debug/
 .Calculation/Calculation.vcxproj

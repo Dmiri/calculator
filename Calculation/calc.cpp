@@ -7,6 +7,7 @@ using namespace std;
 
 //-------------------------------------------------------
 
+bool   is_declared(string var);
 double term();
 double primary();
 double statement();
@@ -17,8 +18,6 @@ double define_name(string var, double val);
 void   calculate();
 void   set_value(string s, double d);
 void   error(TCHAR err[]);
-bool   is_declared(string var);
-//void error(string s1, string s2 = "");
 
 //-------------------------------------------------------
 const char quit = 'q';
@@ -34,7 +33,21 @@ int main() {
 	try {
 		define_name("pi", 3.1415926535);
 		define_name("e", 2.7182818284);
-		cout << "\t\tCalculate\n";
+		cout << "\t\tCalculator\n"
+			<< "Поддерживаются следующие действия над числами:"
+			<< "\n+ сложение \t- вычитание"
+			<< "\n* умножение \t^ возведение в степень"
+			<< "\n\\ деление \t% деление нацело"
+			<< "\nСимвол \";\" означает окончание выражения."
+			<< "\nВнимание!"
+			<< "\nНа даннй момент осуществлена подержка только латинского алфавита."
+			<< "\nКонстанта должна быть создана до ее использования."
+			<< "\nДля создания собственной константы введите"
+			<< "\nключевое слово \"let\" пробел имя переменной \"=\" значение \";\""
+			<< "\nВпрограмме уже заданы такие константы:"
+			<< "\n\"pi\", 3.1415926535"
+			<< "\n\"e\", 2.7182818284"
+			<< "\nДля выхода введите \"q\".\n";
 		calculate();
 		system("pause");
 		return 0;
@@ -70,7 +83,7 @@ public:
 	void putback(Token t); //  возвращает объект класса Token обратно
 	void ignore(char c);
 	Token get();       //  получает объект класса Token
-					   // ( функция get() определена в разделе 6.8.2)
+					   
 private:
 	bool full;    //  находится ли в буфере объект класса Token?
 	Token buffer; //  здесь хранится объект класса Token,
@@ -118,32 +131,36 @@ Token Token_stream::get() {
 	char ch;
 	cin >> ch; // обратите внимание на то, что оператор >> пропускает разделители 
 			// (пробелы, символы перехода на новую строку, символы табуляции и т.д.)
-	switch (ch) {
-		case print:     // для печатиц
+	if (ch >= 0 && ch <= 255) {
+		switch (ch) {
+		case print:     // для печати
 		case quit:     // для выхода
 		case '(': case ')':
 		case '+': case '-':	case '*': case '/': case '%': case '=': case '^':
 			return Token(ch); // пусть каждый символ представляет себя сам
 		case '.':
 		case '0': case '1': case '2': case '3': case '4':
-		case '5': case '6': case '7': case '8': case '9':{
+		case '5': case '6': case '7': case '8': case '9': {
 			cin.putback(ch);  //  возвращаем цифру обратно в поток ввода
 			double val;
 			cin >> val;      // считываем число с плавающей точкой
 			return Token(number, val); // пусть символ '8' означает "число"
 		}
 		default:
-		if (isalpha(ch)) {
-			string s;
-			s += ch;
-			while (cin.get(ch) && (isalpha(ch) || isdigit(ch)))
+			if (isalpha(ch)) {
+				string s;
 				s += ch;
-			cin.putback(ch);
-			if (s == declkey) return Token(let);
-			return Token(name, s);
+				while (cin.get(ch) && isalnum(ch))//(isalpha(ch) || isdigit(ch)))
+					s += ch;
+				cin.putback(ch);
+				if (s == declkey) return Token(let);
+				return Token(name, s);
+			}
 		}
-		error(L" Неправильная   лексема ");
 	}
+	error(L" Неправильная   лексема ");
+	return get();
+
 }
 
 //-------------------------------------------------------
@@ -161,9 +178,7 @@ double expression() {
 			left -= term(); //  вычисляем   и   вычитаем   Терм
 			t = ts.get();
 			break;
-		//case '=':
-		//	set_value(left, term());
-			break;
+		
 		default:
 			ts.putback(t);  //  помещаем   объект  t  обратно в   поток   лексем
 			return left;    //  финал :  символов  +  и  –  нет ;
@@ -183,16 +198,16 @@ double term() {
 			break;
 		case '/': {
 			double d = primary();
-			if (d == 0) error(L" деление   на   нуль ");
+			if (d == 0) error(L"Деление на 0.");
 			left /= d;
 			t = ts.get();
 			break;
 		}
 		case '%': {
 			double d = primary();
-			if (left != int(left))	error(L"Left value must be natural.");
-			if (d != int(d))		error(L"Right value must be natural.");
-			if (d == 0)				error(L"Division by zero.");
+			if (left != int(left))	error(L"Левое значение некорректно.");
+			if (d != int(d))		error(L"Правое значение некорректно.");
+			if (d == 0)				error(L"Деление на 0.");
 			left = int(left) % int(d);
 			t = ts.get();
 			break;
@@ -200,7 +215,7 @@ double term() {
 		case '^': {
 			double d = primary();
 			if (d != int(d))
-				error(L"Right value must be natural.");
+				error(L"Правое значение некорректно.");
 			else {
 				if (d == 0)
 					left = 1;
@@ -230,7 +245,7 @@ double primary() {
 	case '(': { //  обработка   варианта  '('  выражение  ')'    
 		double d = expression();
 		t = ts.get();
-		if (t.kind != ')') error(L"')' expected");
+		if (t.kind != ')') error(L"Не закрыта скобка.");
 		return d;
 	}
 	case number:             //  используем  '8'  для   представления   числа
@@ -241,7 +256,6 @@ double primary() {
 		return primary();
 	default:
 		return get_value(t.name);
-		//error(L" ожидается   первичное   выражение ");
 	}
 }
 
@@ -250,7 +264,8 @@ void calculate() {
 		while (cin) {
 			cout << "> ";
 			Token t = ts.get();
-			while (t.kind == print) t = ts.get();
+			while (t.kind == print)
+				t = ts.get();
 			if (t.kind == quit) return;
 			ts.putback(t);
 			cout << "=" << statement() << '\n';
@@ -275,9 +290,9 @@ double statement() {
 
 //-------------------------------------------------------
 double declaration() {
-//  предполагается ,  что   мы   можем   выделить   ключевое   слово  "let"
-//  обработка : name =  выражение
-//  объявляется переменная с именем "name" с начальным значением, заданным "выражением"
+	//  предполагается ,  что   мы   можем   выделить   ключевое   слово  "let"
+	//  обработка : name =  выражение
+	//  объявляется переменная с именем "name" с начальным значением, заданным "выражением"
 	Token t = ts.get();
 	if (t.kind != name)
 		error(L" в   объявлении   ожидается   переменная	name");
@@ -300,8 +315,9 @@ double get_value(string s) {
 			return var_table[i].value;
 	error(L"get: неопределенная переменная ");
 	cerr << s;
+	return 0;
 }
-
+//  добавляем   пару  (s, d)  в   вектор  var_table
 void set_value(string s, double d) {
 	for (unsigned int i = 0; i < var_table.size(); ++i)
 		if (var_table[i].name == s) {
@@ -322,7 +338,7 @@ bool is_declared(string var) {
 //  добавляем   пару  (var,val)  в   вектор  var_table
 double define_name(string var, double val) {
 	if (is_declared(var)) {
-		cerr << var; error(L" declared twice");
+		cerr << var; error(L"Повторное декларирование константы.");
 	}
 	var_table.push_back(Variable(var, val));
 	return val;
